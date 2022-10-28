@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+   
+</head>
+<body>
+
+<div id="Report">
+</div>
+
+
+<script>
+
+function createRandomUsername() {
+    return "username" + Math.floor((Math.random() * 10000000000));
+}
+
+class TestModel {
+
+
+    static tests = [];
+
+
+static it(testnumber, name, description, funct) {
+    try{
+        console.log();
+        console.log(`Running Test ${testnumber} ------------------------------------------------`)
+        funct();
+        console.log('Success - ' + description);
+        console.log();
+
+        TestModel.addTest(testnumber, name, description, null, true);
+
+    } catch (error) {
+        console.log('Failed - ' + description + ' - ' + error);
+        console.log();
+        TestModel.addTest(testnumber, name, description, error, false);
+
+    }
+}
+
+static assert(isTrue, message) {
+    if (!isTrue) {
+        throw new Error(message);
+    }
+}
+
+
+
+
+static addTest (number, name, description, error, success) {
+    this.tests.push({number: number, name: name, description: description, error: error, success: success});
+}
+
+static reportTest() {
+    
+    let testReport = '';
+    this.tests.forEach(test => {
+        testReport += `<p>${test.number} - ${test.success} - ${test.name} - ${test.description} - ${test.error}</p>`;
+
+    });
+    
+    
+    
+    let element = document.querySelector('#Report');
+
+
+
+
+    element.innerHTML = testReport;
+}
+
+}
+
+
+    function TestStory1() {
+        //Test Id.
+        this.Story1Test0();
+        //Duplicate Username
+        this.Story1Test1();
+        //Username validation
+        this.Story1Test2();
+        //Password validation
+        this.Story1Test3();
+        //Password validation
+        this.Story1Test4();
+        //Password validation
+        this.Story1Test5();
+    }
+
+
+
+    //Player - Test Id
+    function Story1Test0() {
+
+        TestModel.it(
+            1.0, 
+            "Create Player - Valid", 
+            "Call createPlayer with a valid username, password.  Verify the return id is correct.", 
+            function() {
+
+            response = this.PlayerModel.createPlayer(createRandomUsername(), "password");
+            TestModel.assert(response.data.success, "Service Failed on creating a valid player");
+            let nextId = response.data.data.playerid + 1;
+
+            let username = createRandomUsername();
+            let password = "password";
+
+            response = this.PlayerModel.createPlayer(username, password);
+            TestModel.assert(response.data.success, "Service Failed on creating a valid player");
+            TestModel.assert(response.data.data.playerid == nextId, "created player id is not sequential.");
+            TestModel.assert(response.data.data.username == username, `Response username should be ${username}`);
+            TestModel.assert(!response.data.data.password, `Response password should not be returned.`);
+            
+        });
+    }
+
+
+    //Player - Dupe username test.
+    function Story1Test1() {
+
+
+        TestModel.it(
+            1.1,
+            "Create Player - Dupe Username", 
+            "Call createPlayer with a valid username, password, Then call create player again with the same username.  Verify the proper error is returned.", 
+            function() {
+            let uniquename = createRandomUsername();
+
+            response = this.PlayerModel.createPlayer(uniquename, "password");
+            TestModel.assert(response.data.success, "Service Failed on creating a valid player");
+
+            response = this.PlayerModel.createPlayer(uniquename, "password");
+            TestModel.assert(!response.data.success, "Service should have failed on creating a duplicate username.");
+            TestModel.assert(response.data.errormessage.includes("Username is already taken.  Please select another."), "Incorrect Error Message provided.");
+
+
+        });
+    }
+
+    //Player - username between 8 - 25 characters
+    function Story1Test2() {
+
+        TestModel.it(
+            1.2,
+            "Create Player - Username is 8-25 characters", 
+            "Call createPlayer with a username that is too short and too long.  Verify the proper error is returned.", 
+            function() {
+            response = this.PlayerModel.createPlayer("short", "password");
+            TestModel.assert(!response.data.success, "Service should have failed - the username is too short.");
+            TestModel.assert(response.data.errormessage.includes("Username must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided. (username too short)");
+
+            response = this.PlayerModel.createPlayer("UserNameMoreThanTwentyFive", "password");
+            TestModel.assert(!response.data.success, "Service should have failed - the username is too long.");
+            TestModel.assert(response.data.errormessage.includes("Username must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided. (username too long)");
+
+        });
+    }
+
+    //Player - username letters and characters
+    function Story1Test3() {
+        TestModel.it(
+            1.3,
+            "Create Player - Username cannot contain symbols", 
+            "Call createPlayer with a username that contains symbols.  Verify the proper error is returned.", 
+            function() {
+            response = this.PlayerModel.createPlayer("user.name", "password");
+            TestModel.assert(!response.data.success, "Service should have failed, the username contains symbols.");
+            TestModel.assert(response.data.errormessage.includes("Username must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided.");
+
+            response = this.PlayerModel.createPlayer("user$name", "password");
+            TestModel.assert(!response.data.success, "Service should have failed, the username contains symbols.");
+            TestModel.assert(response.data.errormessage.includes("Username must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided.");
+
+        });
+    }
+
+    //Player - password between 8 - 25 characters
+    function Story1Test4() {
+        TestModel.it(
+            1.4,
+            "Create Player - Password is 8-25 characters", 
+            "Call createPlayer with a password that is too short and too long.  Verify the proper error is returned.", 
+            function() {
+            response = this.PlayerModel.createPlayer(createRandomUsername(), "short");
+            TestModel.assert(!response.data.success, "Service should have failed, the password is too short.");
+            TestModel.assert(response.data.errormessage.includes("Password must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided.");
+
+            response = this.PlayerModel.createPlayer(createRandomUsername(), "PasswordMoreThanTwentyFive");
+            TestModel.assert(!response.data.success, "Service should have failed, the password is too long.");
+            TestModel.assert(response.data.errormessage.includes("Password must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided.");
+
+        });
+    }
+
+    //Player - password letters and characters
+    function Story1Test5() {
+        TestModel.it(
+            1.5,
+            "Create Player - Password cannot contain symbols", 
+            "Call createPlayer with a password that contains symbols.  Verify the proper error is returned.", 
+            function() {
+            response = this.PlayerModel.createPlayer(createRandomUsername(), "pass.word");
+            TestModel.assert(!response.data.success, "Service should have failed, the password contains symbols.");
+            TestModel.assert(response.data.errormessage.includes("Password must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided.");
+
+            response = this.PlayerModel.createPlayer(createRandomUsername(), "pass$word");
+            TestModel.assert(!response.data.success, "Service should have failed, the password contains symbols.");
+            TestModel.assert(response.data.errormessage.includes("Password must contain 8-25 characters - including only English letters and numbers."), "Incorrect Error Message provided.");
+
+        });
+    }
+
+
+
+
+
+    class PlayerModel {
+
+
+        getPlayer(id) {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/player/${id}`;
+
+            try {
+                xhttp.open("GET", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                //xhttp.send(JSON.stringify({latitude: latitude, longitude: longitude, alert: alert}));
+                xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+
+        getPlayers() {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/player`;
+
+            try {
+                xhttp.open("GET", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                //xhttp.send(JSON.stringify({latitude: latitude, longitude: longitude, alert: alert}));
+                xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+
+
+        createPlayer(name, pass) {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/player`;
+
+            try {
+                xhttp.open("POST", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                xhttp.send(JSON.stringify({username: name, password: pass}));
+                //xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+    }
+
+
+
+    this.PlayerModel = new PlayerModel();
+    this.TestStory1();
+    TestModel.reportTest();
+
+
+
+</script>
+
+</body>
+</html>

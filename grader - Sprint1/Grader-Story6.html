@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+   
+</head>
+<body>
+
+<div id="Report">
+</div>
+
+
+<script>
+
+function createRandomUsername() {
+    return "username" + Math.floor((Math.random() * 10000000000));
+}
+
+class TestModel {
+
+
+    static tests = [];
+
+
+static it(testnumber, name, description, funct) {
+    try{
+        console.log();
+        console.log(`Running Test ${testnumber} ------------------------------------------------`)
+        funct();
+        console.log('Success - ' + description);
+        console.log();
+
+        TestModel.addTest(testnumber, name, description, null, true);
+
+    } catch (error) {
+        console.log('Failed - ' + description + ' - ' + error);
+        console.log();
+        TestModel.addTest(testnumber, name, description, error, false);
+
+    }
+}
+
+static assert(isTrue, message) {
+    if (!isTrue) {
+        throw new Error(message);
+    }
+}
+
+
+
+
+static addTest (number, name, description, error, success) {
+    this.tests.push({number: number, name: name, description: description, error: error, success: success});
+}
+
+static reportTest() {
+    
+    let testReport = '';
+    this.tests.forEach(test => {
+        testReport += `<p>${test.number} - ${test.success} - ${test.name} - ${test.description} - ${test.error}</p>`;
+
+    });
+    
+    
+    
+    let element = document.querySelector('#Report');
+
+
+
+
+    element.innerHTML = testReport;
+}
+
+}
+
+    function TestStory6() {
+        //Test Id.
+        this.Story6Test0();
+        this.Story6Test1();
+        this.Story6Test2();
+    }
+ 
+    
+    //Player - Test Id
+    function Story6Test0() {
+
+        TestModel.it(
+            6.0, 
+            "Create Game - Valid", 
+            "Call createGame with a valid player1, player2, and gametypeId.  Verify the return id is correct.", 
+            function() {
+
+            let player1id = 1;
+            let player2id = 2;
+            let gametypeid = 1;
+            response = this.GameModel.createGame(player1id, player2id, gametypeid);
+            TestModel.assert(response.data.success, "Service Failed on creating a valid game");
+            let nextId = response.data.data.gameid + 1;
+
+            response = this.GameModel.createGame(player1id, player2id, gametypeid);
+            TestModel.assert(response.data.success, "Service Failed on creating a valid game");
+            TestModel.assert(response.data.data.gameid == nextId, "created game id is not sequential.");
+            TestModel.assert(response.data.data.status == "Board Setup", "Game status should be returned as 'Board Setup'");
+            
+            TestModel.assert(response.data.data.gametypeid == gametypeid, `Response gametypeid should be ${gametypeid}`);
+            TestModel.assert(response.data.data.player1id == player1id, `Response player1id should be ${player1id}`);
+            TestModel.assert(response.data.data.player2id == player2id, `Response player2id should be ${player2id}`);
+            
+            TestModel.assert(response.data.data.winner <= 0, `Response winner should not be set`);
+            TestModel.assert(response.data.data.playerturn <= 0, `Response playerturn should not be set`);
+            
+        });
+    }
+
+
+    //Game - Missing Fields
+    function Story6Test1() {
+
+        TestModel.it(
+            6.1, 
+            "Create Game - Missing fields", 
+            "Call createGame with a missing player1, player2, or gametypeId.  Verify the proper error is returned.", 
+            function() {
+            response = this.GameModel.createGame(null, 2, 1);
+            TestModel.assert(!response.data.success, "Service should have failed, player 1 missing.");
+            TestModel.assert(response.data.errormessage.includes("Must include all parameters."), "Incorrect Error Message provided.");
+
+            response = this.GameModel.createGame(1, null, 1);
+            TestModel.assert(!response.data.success, "Service should have failed, player 2 missing.");
+            TestModel.assert(response.data.errormessage.includes("Must include all parameters."), "Incorrect Error Message provided.");
+
+            response = this.GameModel.createGame(1, 2, null);
+            TestModel.assert(!response.data.success, "Service should have failed, game type missing.");
+            TestModel.assert(response.data.errormessage.includes("Must include all parameters."), "Incorrect Error Message provided.");
+
+        });
+    }                                                                    
+
+    //Game - Invalid Fields
+    function Story6Test2() {
+
+        TestModel.it(
+            6.2, 
+            "Create Game - Invalid fields", 
+            "Call createGame with an invalid player1, player2, or gametypeId.  Verify the proper error is returned.", 
+            function() {
+            response = this.GameModel.createGame(1645, 2, 1);
+            TestModel.assert(!response.data.success, "Service should have failed, player 1 is invalid.");
+            TestModel.assert(response.data.errormessage.includes("Player 1 is not a valid player."), "Incorrect Error Message provided. (player 1 invalid)");
+
+            response = this.GameModel.createGame(1, 1645, 1);
+            TestModel.assert(!response.data.success, "Service should have failed, player 2 is invalid.");
+            TestModel.assert(response.data.errormessage.includes("Player 2 is not a valid player."), "Incorrect Error Message provided. (Player 2 invalid)");
+
+            response = this.GameModel.createGame(1, 2, 1645);
+            TestModel.assert(!response.data.success, "Service should have failed, game type is invalid.");
+            TestModel.assert(response.data.errormessage.includes("The gametype is not valid."), "Incorrect Error Message provided. (game type invalid)");
+        });
+    }                                                                    
+
+
+    class GameModel {
+
+
+        getGame(gameid, playerid) {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/game/${gameid}/player/${playerid}`;
+
+            try {
+                xhttp.open("GET", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                //xhttp.send(JSON.stringify({latitude: latitude, longitude: longitude, alert: alert}));
+                xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+
+        getGames() {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/game`;
+
+            try {
+                xhttp.open("GET", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                //xhttp.send(JSON.stringify({latitude: latitude, longitude: longitude, alert: alert}));
+                xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+
+
+        createGame(player1, player2, gametype) {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/game`;
+
+            try {
+                xhttp.open("POST", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                xhttp.send(JSON.stringify({player1id: player1, player2id: player2, gametypeid: gametype}));
+                //xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+
+        setShips(gameid, player, ships) {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/game/${gameid}/ships`;
+
+            try {
+                xhttp.open("POST", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                xhttp.send(JSON.stringify({playerid: player, shiplocations: ships}));
+                //xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+        takeTurn(playerId, gameId, column, row) {
+            let response = {};
+            var xhttp = new XMLHttpRequest();
+
+            let url = `http://localhost:8080/game/${gameId}/taketurn`;
+
+            try {
+                xhttp.open("POST", url, false);
+                xhttp.setRequestHeader("Content-type", "application/json");
+                xhttp.send(JSON.stringify({playerid: playerId, column: column, row: row}));
+                //xhttp.send();
+
+                if (xhttp.status != 200) {
+                    //Handle Error
+                    response.error = true;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                } else {
+                    response.error = false;
+                    response.status = xhttp.status;
+                    response.data = JSON.parse(xhttp.responseText);
+                }
+            } catch (ex) {
+                response.error = true;
+                response.data = null;
+                response.ex = ex;
+            }
+            return response;
+        }
+
+
+    }
+
+
+        this.GameModel = new GameModel();
+
+        this.TestStory6();
+        TestModel.reportTest();
+
+
+
+</script>
+
+</body>
+</html>
